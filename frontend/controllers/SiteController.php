@@ -12,6 +12,7 @@ use yii\web\BadRequestHttpException;
 use yii\web\Controller;
 use yii\filters\VerbFilter;
 use yii\filters\AccessControl;
+use yii\web\UploadedFile;
 
 /**
  * Site controller
@@ -31,7 +32,7 @@ class SiteController extends Controller
                     [
                         'actions' => ['signup'],
                         'allow' => true,
-                        'roles' => ['?'],
+                        'roles' => ['admin'],
                     ],
                     [
                         'actions' => ['logout'],
@@ -93,38 +94,19 @@ class SiteController extends Controller
         return $this->goHome();
     }
 
-    public function actionContact()
-    {
-        $model = new ContactForm();
-        if ($model->load(Yii::$app->request->post()) && $model->validate()) {
-            if ($model->sendEmail(Yii::$app->params['adminEmail'])) {
-                Yii::$app->session->setFlash('success', 'Thank you for contacting us. We will respond to you as soon as possible.');
-            } else {
-                Yii::$app->session->setFlash('error', 'There was an error sending email.');
-            }
-
-            return $this->refresh();
-        } else {
-            return $this->render('contact', [
-                'model' => $model,
-            ]);
-        }
-    }
-
-    public function actionAbout()
-    {
-        return $this->render('about');
-    }
 
     public function actionSignup()
     {
         $model = new SignupForm();
+        $objAvatar = UploadedFile::getInstance($model, 'avatar');
         if ($model->load(Yii::$app->request->post())) {
-            if ($user = $model->signup()) {
-                if (Yii::$app->getUser()->login($user)) {
-                    return $this->goHome();
-                }
+            $model->avatar = $objAvatar;
+            if ($model->signup()) {
+                Yii::$app->session->setFlash('success', 'Пользователь успешно зарегистрирован.');
+            } else {
+                Yii::$app->session->setFlash('error', 'Ошибка создания пользователя');
             }
+            return $this->refresh();
         }
 
         return $this->render('signup', [

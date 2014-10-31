@@ -12,6 +12,8 @@ use yii\web\IdentityInterface;
  *
  * @property integer $id
  * @property string $username
+ * @property string $surname
+ * @property string $avatar
  * @property string $password_hash
  * @property string $password_reset_token
  * @property string $email
@@ -34,6 +36,17 @@ class User extends ActiveRecord implements IdentityInterface
     public static function tableName()
     {
         return '{{%user}}';
+    }
+
+    public function attributeLabels()
+    {
+        return [
+            'username' => 'Имя',
+            'surname' => 'Фамилия',
+            'avatar' => 'Аватар',
+            'email' => 'Email',
+            'password' => 'Пароль',
+        ];
     }
 
     /**
