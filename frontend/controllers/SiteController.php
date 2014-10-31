@@ -163,14 +163,8 @@ class SiteController extends Controller
      */
     public function actionLenta()
     {
-        if (!Yii::$app->user->isGuest) {
-            $objLastReport = StatusReports::findOneLast();
-            if ($objLastReport) {
-                \Yii::$app->session->set('last_report', $objLastReport->id);
-            }
-        }
         return $this->render('lenta', [
-            'attrReports' => StatusReports::find()->all(),
+            'attrReports' => StatusReports::findAllSortId(),
         ]);
     }
 

@@ -51,7 +51,6 @@ if (!Yii::$app->user->isGuest) {
                 $menuItems[] = ['label' => 'Войти', 'url' => ['/site/login']];
             } else {
                 if (\Yii::$app->user->can('admin')) {
-                    $menuItems[] = ['label' => 'Зарегить пользователя', 'url' => ['/site/signup']];
                     $menuItems[] = ['label' => 'Пользователи', 'url' => ['/user'], 'role'=>['admin']];
                 } elseif (\Yii::$app->user->can('manager'))  {
 

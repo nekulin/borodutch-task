@@ -39,7 +39,7 @@ $objDate = new \common\libs\Date();
                 <div>
                     <?php if ($attrReports) { ?>
                         <?php foreach ($attrReports as $objStatusReport) { ?>
-                            <div>
+                            <div class="thumbnail">
                                 <time><?= $objDate->format($objStatusReport->created_at, 'Y-m-d H:i:s') ?></time>
                                 <?= Html::encode($objStatusReport->title) ?>
                                 <?= Html::a('<i class="glyphicon glyphicon-remove-circle"></i>', ['report/delete', 'id'=>$objStatusReport->id]) ?>
