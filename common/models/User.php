@@ -6,6 +6,7 @@ use yii\base\NotSupportedException;
 use yii\behaviors\TimestampBehavior;
 use yii\db\ActiveRecord;
 use yii\web\IdentityInterface;
+use yii\web\UploadedFile;
 
 /**
  * User model
@@ -29,6 +30,15 @@ class User extends ActiveRecord implements IdentityInterface
     const STATUS_DELETED = 0;
     const STATUS_ACTIVE = 10;
     const ROLE_USER = 10;
+    const PATH_AVATAR = 'uploads';
+    const SIZE_AVATAR = 80;
+
+    public $password;
+
+    /**
+     * @var UploadedFile
+     */
+    public $image;
 
     /**
      * @inheritdoc
@@ -65,12 +75,50 @@ class User extends ActiveRecord implements IdentityInterface
     public function rules()
     {
         return [
+            [['username', 'surname'], 'filter', 'filter' => 'trim'],
+            [['username', 'surname'], 'required'],
+            ['username', 'unique', 'targetClass' => '\common\models\User', 'message' => 'Это имя пользователя уже занято.'],
+            ['username', 'string', 'min' => 2, 'max' => 255],
+            ['surname', 'string', 'min' => 2, 'max' => 120],
+
+            [['image'], 'safe'],
+            [['image'], 'file', 'extensions' => 'jpg, png', 'mimeTypes' => 'image/jpeg, image/png'],
+
+            ['email', 'filter', 'filter' => 'trim'],
+            ['email', 'required'],
+            ['email', 'email'],
+            ['email', 'unique', 'targetClass' => '\common\models\User', 'message' => 'Этот адрес уже занят.'],
+
+            ['password', 'required', 'on'=>'insert'],
+            ['password', 'string', 'min' => 6],
             ['status', 'default', 'value' => self::STATUS_ACTIVE],
             ['status', 'in', 'range' => [self::STATUS_ACTIVE, self::STATUS_DELETED]],
 
             ['role', 'default', 'value' => self::ROLE_USER],
             ['role', 'in', 'range' => [self::ROLE_USER]],
         ];
+    }
+
+
+    public function beforeSave()
+    {
+        if ($this->isNewRecord || $this->password!="") {
+            $this->setPassword($this->password);
+            $this->generateAuthKey();
+        }
+        if (is_object($this->image)) {
+            $strFileName = self::PATH_AVATAR .  '/' . $this->avatar;
+            if (!$this->isNewRecord && $this->avatar && file_exists($strFileName)) {
+                unlink($strFileName);
+            }
+            $strFileName = md5(uniqid('avatar') . '-' . $this->image->baseName) . '.' . $this->image->extension;
+            $this->image->saveAs(self::PATH_AVATAR .  '/' . $strFileName);
+            $image = new \Imagick(self::PATH_AVATAR .  '/' . $strFileName);
+            $image->thumbnailImage(self::SIZE_AVATAR, 0);
+            $image->writeImage();
+            $this->avatar = $strFileName;
+        }
+        return true;
     }
 
     /**
@@ -202,5 +250,10 @@ class User extends ActiveRecord implements IdentityInterface
     public function removePasswordResetToken()
     {
         $this->password_reset_token = null;
+    }
+
+    public function getUrlAvatar()
+    {
+        return '/uploads/' . $this->avatar;
     }
 }

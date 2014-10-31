@@ -1,12 +1,12 @@
 <?php
 namespace frontend\controllers;
 
+use common\models\StatusReports;
+use common\models\User;
 use Yii;
 use common\models\LoginForm;
 use frontend\models\PasswordResetRequestForm;
 use frontend\models\ResetPasswordForm;
-use frontend\models\SignupForm;
-use frontend\models\ContactForm;
 use yii\base\InvalidParamException;
 use yii\web\BadRequestHttpException;
 use yii\web\Controller;
@@ -27,12 +27,12 @@ class SiteController extends Controller
         return [
             'access' => [
                 'class' => AccessControl::className(),
-                'only' => ['logout', 'signup'],
+                'only' => ['logout'],
                 'rules' => [
                     [
-                        'actions' => ['signup'],
+                        'actions' => ['users'],
                         'allow' => true,
-                        'roles' => ['admin'],
+                        'roles' => [],
                     ],
                     [
                         'actions' => ['logout'],
@@ -68,7 +68,14 @@ class SiteController extends Controller
 
     public function actionIndex()
     {
-        return $this->render('index');
+        $attrReports = [];
+        if (!Yii::$app->user->isGuest) {
+            $attrReports = StatusReports::findAllByUser(Yii::$app->user->identity);
+        }
+        return $this->render('index', [
+            'attrReports' => $attrReports,
+            'model' => new StatusReports(),
+        ]);
     }
 
     public function actionLogin()
@@ -79,7 +86,7 @@ class SiteController extends Controller
 
         $model = new LoginForm();
         if ($model->load(Yii::$app->request->post()) && $model->login()) {
-            return $this->goBack();
+            return $this->goHome();
         } else {
             return $this->render('login', [
                 'model' => $model,
@@ -95,21 +102,20 @@ class SiteController extends Controller
     }
 
 
-    public function actionSignup()
+    public function actionProfile()
     {
-        $model = new SignupForm();
-        $objAvatar = UploadedFile::getInstance($model, 'avatar');
+        /** @var User $model */
+        $model = Yii::$app->user->identity;
+        $objAvatar = UploadedFile::getInstance($model, 'image');
         if ($model->load(Yii::$app->request->post())) {
-            $model->avatar = $objAvatar;
-            if ($model->signup()) {
-                Yii::$app->session->setFlash('success', 'Пользователь успешно зарегистрирован.');
-            } else {
-                Yii::$app->session->setFlash('error', 'Ошибка создания пользователя');
+            $model->image = $objAvatar;
+            if ($model->save()) {
+                Yii::$app->session->setFlash('success', 'Профиль сохранен.');
             }
             return $this->refresh();
         }
 
-        return $this->render('signup', [
+        return $this->render('profile', [
             'model' => $model,
         ]);
     }
@@ -148,6 +154,34 @@ class SiteController extends Controller
 
         return $this->render('resetPassword', [
             'model' => $model,
+        ]);
+    }
+
+    /**
+     * Лента всех пользователей
+     * @return string
+     */
+    public function actionLenta()
+    {
+        if (!Yii::$app->user->isGuest) {
+            $objLastReport = StatusReports::findOneLast();
+            if ($objLastReport) {
+                \Yii::$app->session->set('last_report', $objLastReport->id);
+            }
+        }
+        return $this->render('lenta', [
+            'attrReports' => StatusReports::find()->all(),
+        ]);
+    }
+
+    /**
+     * Все пользователи
+     * @return string
+     */
+    public function actionUsers()
+    {
+        return $this->render('users', [
+            'attrUsers' => User::find()->all(),
         ]);
     }
 }

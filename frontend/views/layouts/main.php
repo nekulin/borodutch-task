@@ -1,4 +1,5 @@
 <?php
+use common\models\StatusReports;
 use yii\helpers\Html;
 use yii\bootstrap\Nav;
 use yii\bootstrap\NavBar;
@@ -10,6 +11,11 @@ use frontend\widgets\Alert;
 /* @var $content string */
 
 AppAsset::register($this);
+$isNewReport = false;
+if (!Yii::$app->user->isGuest) {
+    $objLastReport = StatusReports::findOneLast();
+    $isNewReport = ($objLastReport && $objLastReport->user_id!=\Yii::$app->user->id && $objLastReport->id>\Yii::$app->session->get('last_report'));
+}
 ?>
 <?php $this->beginPage() ?>
 <!DOCTYPE html>
@@ -19,6 +25,10 @@ AppAsset::register($this);
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <?= Html::csrfMetaTags() ?>
     <title><?= Html::encode($this->title) ?></title>
+    <script src="http://code.jquery.com/jquery-1.9.0.min.js"></script>
+    <script src="http://code.jquery.com/qunit/qunit-1.10.0.js"></script>
+    <script src="/js/jquery.cookie.js"></script>
+    <script src="/js/main.js"></script>
     <?php $this->head() ?>
 </head>
 <body>
@@ -34,16 +44,22 @@ AppAsset::register($this);
             ]);
             $menuItems = [
                 ['label' => 'Главная', 'url' => ['/site/index']],
+                ['label' => ($isNewReport) ? 'Лента (есть новые)':'Лента', 'url' => ['/site/lenta']],
+                ['label' => 'Все пользователи', 'url' => ['/site/users']],
             ];
             if (Yii::$app->user->isGuest) {
                 $menuItems[] = ['label' => 'Войти', 'url' => ['/site/login']];
             } else {
                 if (\Yii::$app->user->can('admin')) {
-                    $menuItems[] = ['label' => 'Зарегить пользователя', 'url' => ['/site/signup'], 'role'=>['admin']];
+                    $menuItems[] = ['label' => 'Зарегить пользователя', 'url' => ['/site/signup']];
                     $menuItems[] = ['label' => 'Пользователи', 'url' => ['/user'], 'role'=>['admin']];
+                } elseif (\Yii::$app->user->can('manager'))  {
+
+                } else {
+                    $menuItems[] = ['label' => 'Профиль', 'url' => ['/site/profile']];
                 }
                 $menuItems[] = [
-                    'label' => 'Выход (' . Yii::$app->user->identity->username . ')',
+                    'label' => 'Выход (' . Html::encode(Yii::$app->user->identity->username). ')',
                     'url' => ['/site/logout'],
                     'linkOptions' => ['data-method' => 'post']
                 ];
